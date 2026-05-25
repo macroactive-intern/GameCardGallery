@@ -1,1 +1,122 @@
-[]
+[
+  {
+    "slug": "astral-forge",
+    "title": "Astral Forge",
+    "platform": "PC",
+    "genre": "Strategy",
+    "tags": ["space", "base-building", "economy", "tactical"],
+    "rating": 8.7,
+    "releaseYear": 2024,
+    "coverUrl": "https://picsum.photos/seed/astral-forge/800/600",
+    "description": "Command a remote orbital foundry, balance scarce resources, and outmaneuver rival factions in a layered strategy campaign.",
+    "featured": true
+  },
+  {
+    "slug": "neon-drift-runner",
+    "title": "Neon Drift Runner",
+    "platform": "PlayStation 5",
+    "genre": "Racing",
+    "tags": ["arcade", "cyberpunk", "time-trial", "drifting"],
+    "rating": 8.2,
+    "releaseYear": 2023,
+    "coverUrl": "https://picsum.photos/seed/neon-drift-runner/800/600",
+    "description": "Race through rain-slick megacity tracks where precision drifting, boost timing, and route mastery decide every podium finish.",
+    "featured": false
+  },
+  {
+    "slug": "hollow-harbor",
+    "title": "Hollow Harbor",
+    "platform": "Nintendo Switch",
+    "genre": "Adventure",
+    "tags": ["mystery", "exploration", "story-rich", "cozy"],
+    "rating": 9.1,
+    "releaseYear": 2025,
+    "coverUrl": "https://picsum.photos/seed/hollow-harbor/800/600",
+    "description": "Explore a foggy coastal town, restore its abandoned lighthouse, and uncover the quiet secrets hidden in its tide pools.",
+    "featured": true
+  },
+  {
+    "slug": "iron-vanguard-zero",
+    "title": "Iron Vanguard Zero",
+    "platform": "Xbox Series X",
+    "genre": "Action",
+    "tags": ["mechs", "combat", "sci-fi", "campaign"],
+    "rating": 7.9,
+    "releaseYear": 2022,
+    "coverUrl": "https://picsum.photos/seed/iron-vanguard-zero/800/600",
+    "description": "Pilot customizable war machines through explosive missions that reward aggressive movement and smart weapon loadouts.",
+    "featured": false
+  },
+  {
+    "slug": "wildwood-cafe",
+    "title": "Wildwood Cafe",
+    "platform": "PC",
+    "genre": "Simulation",
+    "tags": ["management", "cooking", "relaxing", "crafting"],
+    "rating": 8.5,
+    "releaseYear": 2024,
+    "coverUrl": "https://picsum.photos/seed/wildwood-cafe/800/600",
+    "description": "Run a woodland cafe, forage seasonal ingredients, design inviting rooms, and build friendships with regular customers.",
+    "featured": true
+  },
+  {
+    "slug": "crypt-of-the-sun",
+    "title": "Crypt of the Sun",
+    "platform": "PC",
+    "genre": "RPG",
+    "tags": ["dungeon-crawler", "fantasy", "turn-based", "loot"],
+    "rating": 8.9,
+    "releaseYear": 2021,
+    "coverUrl": "https://picsum.photos/seed/crypt-of-the-sun/800/600",
+    "description": "Assemble a party of relic hunters and descend through radiant ruins filled with tactical battles and ancient bargains.",
+    "featured": false
+  },
+  {
+    "slug": "orbit-rescue",
+    "title": "Orbit Rescue",
+    "platform": "Mobile",
+    "genre": "Puzzle",
+    "tags": ["physics", "space", "short-sessions", "logic"],
+    "rating": 7.6,
+    "releaseYear": 2020,
+    "coverUrl": "https://picsum.photos/seed/orbit-rescue/800/600",
+    "description": "Plot gravity-assisted rescue paths around planets, debris fields, and collapsing stations in compact puzzle missions.",
+    "featured": false
+  },
+  {
+    "slug": "summit-line",
+    "title": "Summit Line",
+    "platform": "PlayStation 5",
+    "genre": "Sports",
+    "tags": ["snowboarding", "tricks", "open-world", "multiplayer"],
+    "rating": 8.0,
+    "releaseYear": 2023,
+    "coverUrl": "https://picsum.photos/seed/summit-line/800/600",
+    "description": "Carve through massive alpine routes, chain stylish tricks, and compete in mountain events with friends online.",
+    "featured": true
+  },
+  {
+    "slug": "echoes-of-veridian",
+    "title": "Echoes of Veridian",
+    "platform": "Xbox Series X",
+    "genre": "RPG",
+    "tags": ["open-world", "magic", "companions", "choices"],
+    "rating": 9.3,
+    "releaseYear": 2025,
+    "coverUrl": "https://picsum.photos/seed/echoes-of-veridian/800/600",
+    "description": "Shape the fate of a fractured kingdom through companion quests, branching choices, and sweeping magical encounters.",
+    "featured": true
+  },
+  {
+    "slug": "deep-static",
+    "title": "Deep Static",
+    "platform": "PC",
+    "genre": "Horror",
+    "tags": ["survival", "underwater", "atmospheric", "stealth"],
+    "rating": 8.4,
+    "releaseYear": 2022,
+    "coverUrl": "https://picsum.photos/seed/deep-static/800/600",
+    "description": "Navigate a failing ocean research station where sound, oxygen, and limited light become your most important resources.",
+    "featured": false
+  }
+]
