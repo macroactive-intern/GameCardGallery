@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { z } from "zod";
 
 import {
@@ -39,16 +40,19 @@ function getErrorMessage(error: unknown): string {
 export async function createGameAction(
   data: CreateGameActionInput,
 ): Promise<ActionResult> {
+  let createdSlug = "";
+
   try {
     const validatedData = createGameActionSchema.parse(data);
+    const game = await createGame(validatedData);
 
-    await createGame(validatedData);
+    createdSlug = game.slug;
     revalidateGamePaths();
-
-    return { success: true };
   } catch (error) {
     return { error: getErrorMessage(error) };
   }
+
+  redirect(`/games/${createdSlug}`);
 }
 
 export async function updateGameAction(
@@ -82,9 +86,9 @@ export async function deleteGameAction(slug: string): Promise<ActionResult> {
     }
 
     revalidateGamePaths();
-
-    return { success: true };
   } catch (error) {
     return { error: getErrorMessage(error) };
   }
+
+  redirect("/");
 }

@@ -1,4 +1,4 @@
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 
 import { deleteGameAction } from "@/actions/games";
 import { GameForm } from "@/components/GameForm";
@@ -29,7 +29,6 @@ export default async function EditGamePage({ params }: EditGamePageProps) {
       throw new Error(result.error);
     }
 
-    redirect("/");
   }
 
   return (
