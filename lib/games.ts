@@ -12,13 +12,8 @@ import {
   createGameSchema,
   gameSchema,
   updateGameSchema,
-  type CreateGameInput,
   type Game,
-  type UpdateGameInput,
 } from "./gameSchema";
-
-type CreateGameData = CreateGameInput;
-type UpdateGameData = UpdateGameInput;
 
 const gamesFilePath = path.join(process.cwd(), "data", "games.json");
 const lockFilePath = `${gamesFilePath}.lock`;
@@ -226,7 +221,7 @@ export async function getGameBySlug(slug: string): Promise<Game | null> {
   return games.find((game) => game.slug === slug) ?? null;
 }
 
-export async function createGame(data: CreateGameData): Promise<Game> {
+export async function createGame(data: unknown): Promise<Game> {
   return withGamesWriteLock(async () => {
     const games = await readGames();
     const parsedData = createGameSchema.parse(data);
@@ -251,7 +246,7 @@ export async function createGame(data: CreateGameData): Promise<Game> {
 
 export async function updateGame(
   slug: string,
-  data: UpdateGameData,
+  data: unknown,
 ): Promise<Game | null> {
   return withGamesWriteLock(async () => {
     const games = await readGames();

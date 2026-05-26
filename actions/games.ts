@@ -50,8 +50,7 @@ export async function createGameAction(
   let createdSlug = "";
 
   try {
-    const validatedData = createGameSchema.parse(data);
-    const game = await createGame(validatedData);
+    const game = await createGame(data);
 
     createdSlug = game.slug;
     revalidateGamePaths();
@@ -68,8 +67,7 @@ export async function updateGameAction(
 ): Promise<ActionResult> {
   try {
     const validatedSlug = slugSchema.parse(slug);
-    const validatedData = updateGameSchema.parse(data);
-    const updatedGame = await updateGame(validatedSlug, validatedData);
+    const updatedGame = await updateGame(validatedSlug, data);
 
     if (!updatedGame) {
       return { error: "Game not found." };
