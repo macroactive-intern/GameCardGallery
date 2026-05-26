@@ -61,20 +61,6 @@ function assertUniqueSlugs(games: Game[]): void {
   }
 }
 
-function assertSlugAvailable(
-  games: Game[],
-  slug: string,
-  currentSlug?: string,
-): void {
-  const duplicate = games.some(
-    (game) => game.slug === slug && game.slug !== currentSlug,
-  );
-
-  if (duplicate) {
-    throw new DuplicateSlugError(slug);
-  }
-}
-
 function isFileNotFoundError(error: unknown): error is NodeJS.ErrnoException {
   return error instanceof Error && "code" in error && error.code === "ENOENT";
 }
@@ -226,8 +212,6 @@ export async function createGame(data: unknown): Promise<Game> {
       throw new Error("Title must include at least one letter or number.");
     }
 
-    assertSlugAvailable(games, slug);
-
     const game = gameSchema.parse({
       ...parsedData,
       slug,
@@ -260,8 +244,6 @@ export async function updateGame(
     if (!nextSlug) {
       throw new Error("Title must include at least one letter or number.");
     }
-
-    assertSlugAvailable(games, nextSlug, currentGame.slug);
 
     const updatedGame = gameSchema.parse({
       ...currentGame,
