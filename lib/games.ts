@@ -44,14 +44,9 @@ function createSlug(title: string): string {
 }
 
 function sortFeaturedFirst(games: Game[]): Game[] {
-  return games
-    .map((game, index) => ({ game, index }))
-    .sort((a, b) => {
-      const featuredSort = Number(b.game.featured) - Number(a.game.featured);
-
-      return featuredSort || a.index - b.index;
-    })
-    .map(({ game }) => game);
+  return [...games].sort(
+    (a, b) => Number(b.featured) - Number(a.featured),
+  );
 }
 
 function assertUniqueSlugs(games: Game[]): void {
