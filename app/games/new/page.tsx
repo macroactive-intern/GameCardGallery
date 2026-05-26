@@ -1,4 +1,11 @@
+import type { Metadata } from "next";
+
 import { GameForm } from "@/components/GameForm";
+
+export const metadata: Metadata = {
+  title: "Create Game",
+  description: "Add a new game card to the gallery.",
+};
 
 export default function NewGamePage() {
   return (

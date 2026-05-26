@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { DeleteGameButton } from "@/components/DeleteGameButton";
@@ -9,6 +10,23 @@ type EditGamePageProps = {
     slug: string;
   };
 };
+
+export async function generateMetadata({
+  params,
+}: EditGamePageProps): Promise<Metadata> {
+  const game = await getGameBySlug(params.slug);
+
+  if (!game) {
+    return {
+      title: "Game not found",
+    };
+  }
+
+  return {
+    title: `Edit ${game.title}`,
+    description: `Update details for ${game.title}.`,
+  };
+}
 
 export default async function EditGamePage({ params }: EditGamePageProps) {
   const game = await getGameBySlug(params.slug);
