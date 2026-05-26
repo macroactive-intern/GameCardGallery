@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, type Resolver } from "react-hook-form";
 import { z } from "zod";
 
 import {
@@ -22,10 +22,18 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { createGameSchema, type Game } from "@/lib/gameSchema";
+import {
+  createGameSchema,
+  updateGameSchema,
+  type Game,
+} from "@/lib/gameSchema";
 
-type GameFormValues = z.infer<typeof createGameSchema>;
-type GameFormInput = z.input<typeof createGameSchema>;
+type CreateGameFormValues = z.infer<typeof createGameSchema>;
+type UpdateGameFormValues = z.infer<typeof updateGameSchema>;
+type CreateGameFormInput = z.input<typeof createGameSchema>;
+type UpdateGameFormInput = z.input<typeof updateGameSchema>;
+type GameFormValues = CreateGameFormValues | UpdateGameFormValues;
+type GameFormInput = CreateGameFormInput | UpdateGameFormInput;
 
 type GameFormProps =
   | {
@@ -63,9 +71,12 @@ function parseTags(value: string): string[] {
 export function GameForm({ mode, game }: GameFormProps) {
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const isEditMode = mode === "edit";
+  const resolver = zodResolver(
+    isEditMode ? updateGameSchema : createGameSchema,
+  ) as Resolver<GameFormInput, unknown, GameFormValues>;
 
   const form = useForm<GameFormInput, unknown, GameFormValues>({
-    resolver: zodResolver(createGameSchema),
+    resolver,
     defaultValues: getDefaultValues(game),
   });
 
@@ -207,7 +218,7 @@ export function GameForm({ mode, game }: GameFormProps) {
               <FormControl>
                 <Input
                   placeholder="space, tactical, base-building"
-                  value={field.value.join(", ")}
+                  value={field.value?.join(", ") ?? ""}
                   onBlur={field.onBlur}
                   onChange={(event) => field.onChange(parseTags(event.target.value))}
                   ref={field.ref}
