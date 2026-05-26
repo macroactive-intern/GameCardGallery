@@ -72,6 +72,7 @@ function parseTags(value: string): string[] {
 
 export function GameForm({ mode, game }: GameFormProps) {
   const [actionMessage, setActionMessage] = useState<string | null>(null);
+  const [tagText, setTagText] = useState(() => game?.tags.join(", ") ?? "");
   const isEditMode = mode === "edit";
   const resolver = zodResolver(
     isEditMode ? updateGameSchema : createGameSchema,
@@ -85,9 +86,18 @@ export function GameForm({ mode, game }: GameFormProps) {
   async function onSubmit(values: GameFormValues) {
     setActionMessage(null);
 
+    const parsedTags = parseTags(tagText);
+    form.setValue("tags", parsedTags);
+
     const result = isEditMode
-      ? await updateGameAction(game.slug, values)
-      : await createGameAction(values);
+      ? await updateGameAction(game.slug, {
+          ...values,
+          tags: parsedTags,
+        })
+      : await createGameAction({
+          ...values,
+          tags: parsedTags,
+        });
 
     if ("error" in result) {
       setActionMessage(result.error);
@@ -98,6 +108,7 @@ export function GameForm({ mode, game }: GameFormProps) {
 
     if (!isEditMode) {
       form.reset(getDefaultValues());
+      setTagText("");
     }
   }
 
@@ -220,9 +231,12 @@ export function GameForm({ mode, game }: GameFormProps) {
               <FormControl>
                 <Input
                   placeholder="space, tactical, base-building"
-                  value={field.value?.join(", ") ?? ""}
-                  onBlur={field.onBlur}
-                  onChange={(event) => field.onChange(parseTags(event.target.value))}
+                  value={tagText}
+                  onBlur={() => {
+                    field.onBlur();
+                    field.onChange(parseTags(tagText));
+                  }}
+                  onChange={(event) => setTagText(event.target.value)}
                   ref={field.ref}
                 />
               </FormControl>
