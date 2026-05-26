@@ -208,15 +208,7 @@ export async function deleteGame(slug: string): Promise<boolean> {
   return true;
 }
 
-export async function getRelatedGames(slug: string): Promise<Game[]> {
-  const currentGame = await getGameBySlug(slug);
-
-  if (!currentGame) {
-    return [];
-  }
-
-  const games = await getGames();
-
+export function getRelatedGames(currentGame: Game, games: Game[]): Game[] {
   return games
     .filter(
       (game) => game.slug !== currentGame.slug && game.genre === currentGame.genre,

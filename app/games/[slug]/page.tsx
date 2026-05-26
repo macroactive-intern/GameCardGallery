@@ -38,13 +38,14 @@ export async function generateMetadata({
 }
 
 export default async function GamePage({ params }: GamePageProps) {
-  const game = await getGameBySlug(params.slug);
+  const games = await getGames();
+  const game = games.find((currentGame) => currentGame.slug === params.slug);
 
   if (!game) {
     notFound();
   }
 
-  const relatedGames = await getRelatedGames(game.slug);
+  const relatedGames = getRelatedGames(game, games);
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-7xl flex-col gap-12 px-6 py-10 sm:px-8 lg:px-10">
