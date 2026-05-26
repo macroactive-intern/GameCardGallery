@@ -1,14 +1,16 @@
 import { mkdir, readFile, writeFile } from "fs/promises";
 import path from "path";
 import {
+  createGameSchema,
   gameSchema,
+  updateGameSchema,
   type CreateGameInput,
   type Game,
   type UpdateGameInput,
 } from "./gameSchema";
 
-type CreateGameData = Omit<CreateGameInput, "slug">;
-type UpdateGameData = Omit<UpdateGameInput, "slug">;
+type CreateGameData = CreateGameInput;
+type UpdateGameData = UpdateGameInput;
 
 const gamesFilePath = path.join(process.cwd(), "data", "games.json");
 
@@ -138,7 +140,7 @@ export async function getGameBySlug(slug: string): Promise<Game | null> {
 
 export async function createGame(data: CreateGameData): Promise<Game> {
   const games = await readGames();
-  const parsedData = gameSchema.omit({ slug: true }).parse(data);
+  const parsedData = createGameSchema.parse(data);
   const slug = createSlug(parsedData.title);
 
   if (!slug) {
@@ -169,7 +171,7 @@ export async function updateGame(
   }
 
   const currentGame = games[gameIndex];
-  const parsedData = gameSchema.omit({ slug: true }).partial().parse(data);
+  const parsedData = updateGameSchema.parse(data);
   const nextSlug = parsedData.title
     ? createSlug(parsedData.title)
     : currentGame.slug;

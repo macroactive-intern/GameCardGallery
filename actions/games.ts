@@ -11,16 +11,17 @@ import {
   GameDataError,
   updateGame,
 } from "@/lib/games";
-import { gameSchema } from "@/lib/gameSchema";
+import {
+  createGameSchema,
+  updateGameSchema,
+} from "@/lib/gameSchema";
 
-const createGameActionSchema = gameSchema.omit({ slug: true }).strict();
-const updateGameActionSchema = createGameActionSchema.partial().strict();
 const slugSchema = z.string().trim().min(1);
 
 type ActionResult = { success: true } | { error: string };
 
-export type CreateGameActionInput = z.input<typeof createGameActionSchema>;
-export type UpdateGameActionInput = z.input<typeof updateGameActionSchema>;
+export type CreateGameActionInput = z.input<typeof createGameSchema>;
+export type UpdateGameActionInput = z.input<typeof updateGameSchema>;
 
 function revalidateGamePaths() {
   revalidatePath("/");
@@ -49,7 +50,7 @@ export async function createGameAction(
   let createdSlug = "";
 
   try {
-    const validatedData = createGameActionSchema.parse(data);
+    const validatedData = createGameSchema.parse(data);
     const game = await createGame(validatedData);
 
     createdSlug = game.slug;
@@ -67,7 +68,7 @@ export async function updateGameAction(
 ): Promise<ActionResult> {
   try {
     const validatedSlug = slugSchema.parse(slug);
-    const validatedData = updateGameActionSchema.parse(data);
+    const validatedData = updateGameSchema.parse(data);
     const updatedGame = await updateGame(validatedSlug, validatedData);
 
     if (!updatedGame) {

@@ -22,12 +22,10 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { gameSchema, type Game } from "@/lib/gameSchema";
+import { createGameSchema, type Game } from "@/lib/gameSchema";
 
-const gameFormSchema = gameSchema.omit({ slug: true });
-
-type GameFormValues = z.infer<typeof gameFormSchema>;
-type GameFormInput = z.input<typeof gameFormSchema>;
+type GameFormValues = z.infer<typeof createGameSchema>;
+type GameFormInput = z.input<typeof createGameSchema>;
 
 type GameFormProps =
   | {
@@ -67,7 +65,7 @@ export function GameForm({ mode, game }: GameFormProps) {
   const isEditMode = mode === "edit";
 
   const form = useForm<GameFormInput, unknown, GameFormValues>({
-    resolver: zodResolver(gameFormSchema),
+    resolver: zodResolver(createGameSchema),
     defaultValues: getDefaultValues(game),
   });
 
