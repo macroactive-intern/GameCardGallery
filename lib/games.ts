@@ -12,8 +12,23 @@ type UpdateGameData = Omit<UpdateGameInput, "slug">;
 
 const gamesFilePath = path.join(process.cwd(), "data", "games.json");
 
+export class GameDataError extends Error {
+  constructor(message = "Unable to access game data.") {
+    super(message);
+    this.name = "GameDataError";
+  }
+}
+
+export class DuplicateSlugError extends Error {
+  constructor(slug: string) {
+    super(`A game with the slug "${slug}" already exists.`);
+    this.name = "DuplicateSlugError";
+  }
+}
+
 function createSlug(title: string): string {
   return title
+    .trim()
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)/g, "");
@@ -35,7 +50,7 @@ function assertUniqueSlugs(games: Game[]): void {
 
   for (const game of games) {
     if (slugs.has(game.slug)) {
-      throw new Error(`Duplicate game slug: ${game.slug}`);
+      throw new DuplicateSlugError(game.slug);
     }
 
     slugs.add(game.slug);
@@ -52,7 +67,7 @@ function assertSlugAvailable(
   );
 
   if (duplicate) {
-    throw new Error(`Game slug already exists: ${slug}`);
+    throw new DuplicateSlugError(slug);
   }
 }
 
@@ -60,17 +75,36 @@ function isFileNotFoundError(error: unknown): error is NodeJS.ErrnoException {
   return error instanceof Error && "code" in error && error.code === "ENOENT";
 }
 
+function isFileSystemError(error: unknown): error is NodeJS.ErrnoException {
+  return error instanceof Error && "code" in error;
+}
+
 async function readGames(): Promise<Game[]> {
   try {
-    const file = await readFile(gamesFilePath, "utf8");
+    let file: string;
+
+    try {
+      file = await readFile(gamesFilePath, "utf8");
+    } catch (error) {
+      if (isFileNotFoundError(error)) {
+        return [];
+      }
+
+      throw new GameDataError();
+    }
+
     const games = gameSchema.array().parse(JSON.parse(file));
 
     assertUniqueSlugs(games);
 
     return games;
   } catch (error) {
-    if (isFileNotFoundError(error)) {
-      return [];
+    if (
+      error instanceof SyntaxError ||
+      error instanceof DuplicateSlugError ||
+      isFileSystemError(error)
+    ) {
+      throw new GameDataError();
     }
 
     throw error;
@@ -80,8 +114,16 @@ async function readGames(): Promise<Game[]> {
 async function writeGames(games: Game[]): Promise<void> {
   assertUniqueSlugs(games);
 
-  await mkdir(path.dirname(gamesFilePath), { recursive: true });
-  await writeFile(gamesFilePath, `${JSON.stringify(games, null, 2)}\n`, "utf8");
+  try {
+    await mkdir(path.dirname(gamesFilePath), { recursive: true });
+    await writeFile(
+      gamesFilePath,
+      `${JSON.stringify(games, null, 2)}\n`,
+      "utf8",
+    );
+  } catch {
+    throw new GameDataError();
+  }
 }
 
 export async function getGames(): Promise<Game[]> {
@@ -96,12 +138,17 @@ export async function getGameBySlug(slug: string): Promise<Game | null> {
 
 export async function createGame(data: CreateGameData): Promise<Game> {
   const games = await readGames();
-  const slug = createSlug(data.title);
+  const parsedData = gameSchema.omit({ slug: true }).parse(data);
+  const slug = createSlug(parsedData.title);
+
+  if (!slug) {
+    throw new Error("Title must include at least one letter or number.");
+  }
 
   assertSlugAvailable(games, slug);
 
   const game = gameSchema.parse({
-    ...data,
+    ...parsedData,
     slug,
   });
 
@@ -122,13 +169,20 @@ export async function updateGame(
   }
 
   const currentGame = games[gameIndex];
-  const nextSlug = data.title ? createSlug(data.title) : currentGame.slug;
+  const parsedData = gameSchema.omit({ slug: true }).partial().parse(data);
+  const nextSlug = parsedData.title
+    ? createSlug(parsedData.title)
+    : currentGame.slug;
+
+  if (!nextSlug) {
+    throw new Error("Title must include at least one letter or number.");
+  }
 
   assertSlugAvailable(games, nextSlug, currentGame.slug);
 
   const updatedGame = gameSchema.parse({
     ...currentGame,
-    ...data,
+    ...parsedData,
     slug: nextSlug,
   });
 

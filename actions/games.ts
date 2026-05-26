@@ -7,13 +7,15 @@ import { z } from "zod";
 import {
   createGame,
   deleteGame,
+  DuplicateSlugError,
+  GameDataError,
   updateGame,
 } from "@/lib/games";
 import { gameSchema } from "@/lib/gameSchema";
 
-const createGameActionSchema = gameSchema.omit({ slug: true });
-const updateGameActionSchema = createGameActionSchema.partial();
-const slugSchema = z.string().min(1);
+const createGameActionSchema = gameSchema.omit({ slug: true }).strict();
+const updateGameActionSchema = createGameActionSchema.partial().strict();
+const slugSchema = z.string().trim().min(1);
 
 type ActionResult = { success: true } | { error: string };
 
@@ -27,18 +29,22 @@ function revalidateGamePaths() {
 
 function getErrorMessage(error: unknown): string {
   if (error instanceof z.ZodError) {
-    return error.issues[0]?.message ?? "Invalid game data.";
+    return "Invalid game data.";
   }
 
-  if (error instanceof Error) {
-    return error.message;
+  if (error instanceof DuplicateSlugError) {
+    return "A game with this title already exists.";
+  }
+
+  if (error instanceof GameDataError) {
+    return "Unable to access game data.";
   }
 
   return "Something went wrong.";
 }
 
 export async function createGameAction(
-  data: CreateGameActionInput,
+  data: unknown,
 ): Promise<ActionResult> {
   let createdSlug = "";
 
@@ -56,8 +62,8 @@ export async function createGameAction(
 }
 
 export async function updateGameAction(
-  slug: string,
-  data: UpdateGameActionInput,
+  slug: unknown,
+  data: unknown,
 ): Promise<ActionResult> {
   try {
     const validatedSlug = slugSchema.parse(slug);
@@ -76,7 +82,7 @@ export async function updateGameAction(
   }
 }
 
-export async function deleteGameAction(slug: string): Promise<ActionResult> {
+export async function deleteGameAction(slug: unknown): Promise<ActionResult> {
   try {
     const validatedSlug = slugSchema.parse(slug);
     const deletedGame = await deleteGame(validatedSlug);
