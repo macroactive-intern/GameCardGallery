@@ -1,8 +1,7 @@
 import { notFound } from "next/navigation";
 
-import { deleteGameAction } from "@/actions/games";
+import { DeleteGameButton } from "@/components/DeleteGameButton";
 import { GameForm } from "@/components/GameForm";
-import { Button } from "@/components/ui/button";
 import { getGameBySlug } from "@/lib/games";
 
 type EditGamePageProps = {
@@ -18,19 +17,6 @@ export default async function EditGamePage({ params }: EditGamePageProps) {
     notFound();
   }
 
-  const slug = game.slug;
-
-  async function deleteGame() {
-    "use server";
-
-    const result = await deleteGameAction(slug);
-
-    if ("error" in result) {
-      throw new Error(result.error);
-    }
-
-  }
-
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-3xl flex-col gap-8 px-6 py-10 sm:px-8 lg:px-10">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -43,11 +29,7 @@ export default async function EditGamePage({ params }: EditGamePageProps) {
           </h1>
         </div>
 
-        <form action={deleteGame}>
-          <Button type="submit" variant="destructive">
-            Delete game
-          </Button>
-        </form>
+        <DeleteGameButton slug={game.slug} />
       </header>
 
       <GameForm game={game} mode="edit" />
