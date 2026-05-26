@@ -1,4 +1,12 @@
-import { mkdir, readFile, writeFile } from "fs/promises";
+import {
+  mkdir,
+  open,
+  readFile,
+  rename,
+  stat,
+  unlink,
+  writeFile,
+} from "fs/promises";
 import path from "path";
 import {
   createGameSchema,
@@ -13,6 +21,10 @@ type CreateGameData = CreateGameInput;
 type UpdateGameData = UpdateGameInput;
 
 const gamesFilePath = path.join(process.cwd(), "data", "games.json");
+const lockFilePath = `${gamesFilePath}.lock`;
+const writeLockTimeoutMs = 5_000;
+const staleWriteLockMs = 30_000;
+const writeLockRetryMs = 25;
 
 export class GameDataError extends Error {
   constructor(message = "Unable to access game data.") {
@@ -81,6 +93,78 @@ function isFileSystemError(error: unknown): error is NodeJS.ErrnoException {
   return error instanceof Error && "code" in error;
 }
 
+function isLockAlreadyHeldError(
+  error: unknown,
+): error is NodeJS.ErrnoException {
+  return error instanceof Error && "code" in error && error.code === "EEXIST";
+}
+
+function delay(milliseconds: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, milliseconds);
+  });
+}
+
+async function removeStaleWriteLock(): Promise<void> {
+  try {
+    const lockStats = await stat(lockFilePath);
+
+    if (Date.now() - lockStats.mtimeMs > staleWriteLockMs) {
+      await unlink(lockFilePath);
+    }
+  } catch (error) {
+    if (!isFileNotFoundError(error)) {
+      throw new GameDataError();
+    }
+  }
+}
+
+async function acquireWriteLock(): Promise<() => Promise<void>> {
+  const startedAt = Date.now();
+
+  await mkdir(path.dirname(gamesFilePath), { recursive: true });
+
+  while (true) {
+    try {
+      const lockHandle = await open(lockFilePath, "wx");
+
+      await lockHandle.close();
+
+      return async () => {
+        try {
+          await unlink(lockFilePath);
+        } catch (error) {
+          if (!isFileNotFoundError(error)) {
+            throw new GameDataError();
+          }
+        }
+      };
+    } catch (error) {
+      if (!isLockAlreadyHeldError(error)) {
+        throw new GameDataError();
+      }
+
+      await removeStaleWriteLock();
+
+      if (Date.now() - startedAt >= writeLockTimeoutMs) {
+        throw new GameDataError("Game data is busy. Please try again.");
+      }
+
+      await delay(writeLockRetryMs);
+    }
+  }
+}
+
+async function withGamesWriteLock<T>(operation: () => Promise<T>): Promise<T> {
+  const releaseWriteLock = await acquireWriteLock();
+
+  try {
+    return await operation();
+  } finally {
+    await releaseWriteLock();
+  }
+}
+
 async function readGames(): Promise<Game[]> {
   try {
     let file: string;
@@ -116,14 +200,18 @@ async function readGames(): Promise<Game[]> {
 async function writeGames(games: Game[]): Promise<void> {
   assertUniqueSlugs(games);
 
+  const temporaryFilePath = `${gamesFilePath}.${process.pid}.${Date.now()}.tmp`;
+
   try {
     await mkdir(path.dirname(gamesFilePath), { recursive: true });
     await writeFile(
-      gamesFilePath,
+      temporaryFilePath,
       `${JSON.stringify(games, null, 2)}\n`,
       "utf8",
     );
+    await rename(temporaryFilePath, gamesFilePath);
   } catch {
+    await unlink(temporaryFilePath).catch(() => undefined);
     throw new GameDataError();
   }
 }
@@ -139,73 +227,79 @@ export async function getGameBySlug(slug: string): Promise<Game | null> {
 }
 
 export async function createGame(data: CreateGameData): Promise<Game> {
-  const games = await readGames();
-  const parsedData = createGameSchema.parse(data);
-  const slug = createSlug(parsedData.title);
+  return withGamesWriteLock(async () => {
+    const games = await readGames();
+    const parsedData = createGameSchema.parse(data);
+    const slug = createSlug(parsedData.title);
 
-  if (!slug) {
-    throw new Error("Title must include at least one letter or number.");
-  }
+    if (!slug) {
+      throw new Error("Title must include at least one letter or number.");
+    }
 
-  assertSlugAvailable(games, slug);
+    assertSlugAvailable(games, slug);
 
-  const game = gameSchema.parse({
-    ...parsedData,
-    slug,
+    const game = gameSchema.parse({
+      ...parsedData,
+      slug,
+    });
+
+    await writeGames([...games, game]);
+
+    return game;
   });
-
-  await writeGames([...games, game]);
-
-  return game;
 }
 
 export async function updateGame(
   slug: string,
   data: UpdateGameData,
 ): Promise<Game | null> {
-  const games = await readGames();
-  const gameIndex = games.findIndex((game) => game.slug === slug);
+  return withGamesWriteLock(async () => {
+    const games = await readGames();
+    const gameIndex = games.findIndex((game) => game.slug === slug);
 
-  if (gameIndex === -1) {
-    return null;
-  }
+    if (gameIndex === -1) {
+      return null;
+    }
 
-  const currentGame = games[gameIndex];
-  const parsedData = updateGameSchema.parse(data);
-  const nextSlug = parsedData.title
-    ? createSlug(parsedData.title)
-    : currentGame.slug;
+    const currentGame = games[gameIndex];
+    const parsedData = updateGameSchema.parse(data);
+    const nextSlug = parsedData.title
+      ? createSlug(parsedData.title)
+      : currentGame.slug;
 
-  if (!nextSlug) {
-    throw new Error("Title must include at least one letter or number.");
-  }
+    if (!nextSlug) {
+      throw new Error("Title must include at least one letter or number.");
+    }
 
-  assertSlugAvailable(games, nextSlug, currentGame.slug);
+    assertSlugAvailable(games, nextSlug, currentGame.slug);
 
-  const updatedGame = gameSchema.parse({
-    ...currentGame,
-    ...parsedData,
-    slug: nextSlug,
+    const updatedGame = gameSchema.parse({
+      ...currentGame,
+      ...parsedData,
+      slug: nextSlug,
+    });
+
+    const updatedGames = games.with(gameIndex, updatedGame);
+
+    await writeGames(updatedGames);
+
+    return updatedGame;
   });
-
-  const updatedGames = games.with(gameIndex, updatedGame);
-
-  await writeGames(updatedGames);
-
-  return updatedGame;
 }
 
 export async function deleteGame(slug: string): Promise<boolean> {
-  const games = await readGames();
-  const nextGames = games.filter((game) => game.slug !== slug);
+  return withGamesWriteLock(async () => {
+    const games = await readGames();
+    const nextGames = games.filter((game) => game.slug !== slug);
 
-  if (nextGames.length === games.length) {
-    return false;
-  }
+    if (nextGames.length === games.length) {
+      return false;
+    }
 
-  await writeGames(nextGames);
+    await writeGames(nextGames);
 
-  return true;
+    return true;
+  });
 }
 
 export function getRelatedGames(currentGame: Game, games: Game[]): Game[] {
