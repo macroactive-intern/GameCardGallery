@@ -27,9 +27,7 @@ export async function generateMetadata({
   const game = await getGameBySlug(params.slug);
 
   if (!game) {
-    return {
-      title: "Game not found",
-    };
+    return {};
   }
 
   return {
