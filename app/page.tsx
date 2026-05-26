@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { GameGrid } from "@/components/GameGrid";
+import { Button } from "@/components/ui/button";
 import { getGames } from "@/lib/games";
 
 export default async function HomePage() {
@@ -18,12 +19,9 @@ export default async function HomePage() {
           </h1>
         </div>
 
-        <Link
-          className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          href="/games/new"
-        >
-          Create new game
-        </Link>
+        <Button asChild>
+          <Link href="/games/new">Create new game</Link>
+        </Button>
       </header>
 
       <GameGrid games={games} />
