@@ -54,7 +54,7 @@ function getDefaultValues(game?: Game): GameFormInput {
     title: game?.title ?? "",
     platform: game?.platform ?? "",
     genre: game?.genre ?? "",
-    tags: game?.tags ?? [],
+    tags: game?.tags ? [...game.tags] : [],
     rating: game?.rating ?? 1,
     releaseYear: game?.releaseYear ?? getCurrentYear(),
     coverUrl: game?.coverUrl ?? "",
