@@ -45,7 +45,9 @@ type GameFormProps =
       game: Game;
     };
 
-const currentYear = new Date().getFullYear();
+function getCurrentYear() {
+  return new Date().getFullYear();
+}
 
 function getDefaultValues(game?: Game): GameFormInput {
   return {
@@ -54,7 +56,7 @@ function getDefaultValues(game?: Game): GameFormInput {
     genre: game?.genre ?? "",
     tags: game?.tags ?? [],
     rating: game?.rating ?? 1,
-    releaseYear: game?.releaseYear ?? currentYear,
+    releaseYear: game?.releaseYear ?? getCurrentYear(),
     coverUrl: game?.coverUrl ?? "",
     description: game?.description ?? "",
     featured: game?.featured ?? false,
@@ -195,7 +197,7 @@ export function GameForm({ mode, game }: GameFormProps) {
                 <FormLabel>Release year</FormLabel>
                 <FormControl>
                   <Input
-                    max={currentYear}
+                    max={getCurrentYear()}
                     min={1970}
                     step={1}
                     type="number"

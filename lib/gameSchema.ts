@@ -1,6 +1,8 @@
 import { z } from "zod";
 
-const currentYear = new Date().getFullYear();
+function getCurrentYear() {
+  return new Date().getFullYear();
+}
 
 export const gameSchema = z
   .object({
@@ -24,7 +26,13 @@ export const gameSchema = z
       .refine((value) => Number.isInteger(value * 10), {
         message: "Rating must use at most one decimal place.",
       }),
-    releaseYear: z.number().int().min(1970).max(currentYear),
+    releaseYear: z
+      .number()
+      .int()
+      .min(1970)
+      .refine((value) => value <= getCurrentYear(), {
+        message: "Release year cannot be in the future.",
+      }),
     coverUrl: z.string().trim().url(),
     description: z.string().trim().min(20).max(500),
     featured: z.boolean().default(false),
