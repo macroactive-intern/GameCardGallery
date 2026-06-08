@@ -1,7 +1,21 @@
 import { z } from "zod";
 
+import imageHostConfig from "@/config/image-hosts.json";
+
+const { allowedImageHosts } = imageHostConfig;
+
 function getCurrentYear() {
   return new Date().getFullYear();
+}
+
+function isAllowedImageUrl(value: string) {
+  try {
+    const url = new URL(value);
+
+    return url.protocol === "https:" && allowedImageHosts.includes(url.hostname);
+  } catch {
+    return false;
+  }
 }
 
 export const gameSchema = z
@@ -33,7 +47,9 @@ export const gameSchema = z
       .refine((value) => value <= getCurrentYear(), {
         message: "Release year cannot be in the future.",
       }),
-    coverUrl: z.string().trim().url(),
+    coverUrl: z.string().trim().url().refine(isAllowedImageUrl, {
+      message: "Cover URL must use a configured HTTPS image host.",
+    }),
     description: z.string().trim().min(20).max(500),
     featured: z.boolean().default(false),
   })
