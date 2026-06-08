@@ -2,9 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Trophy, Zap } from "lucide-react";
+import { auth } from "@/lib/auth/config";
 import { prisma } from "@/lib/prisma";
 import { getRunById } from "@/lib/runs/service";
 import { formatMs } from "@/lib/timer/formatter";
+import { CompareMyPbButton } from "@/components/timer/CompareMyPbButton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -20,7 +22,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function RunPage({ params }: Props) {
-  const run = await getRunById(prisma, params.id);
+  const [run, session] = await Promise.all([
+    getRunById(prisma, params.id),
+    auth(),
+  ]);
   if (!run) notFound();
 
   type SavedSplit = { name: string; segmentMs: number | null };
@@ -117,6 +122,13 @@ export default async function RunPage({ params }: Props) {
           </CardContent>
         </Card>
       )}
+
+      <CompareMyPbButton
+        userId={session?.user?.id ?? null}
+        game={run.game}
+        category={run.category}
+        splits={savedSplits}
+      />
 
       <div>
         <Button asChild>
