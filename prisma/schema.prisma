@@ -18,10 +18,11 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  accounts     Account[]
-  sessions     Session[]
-  achievements Achievement[]
-  xp           UserXp?
+  accounts      Account[]
+  sessions      Session[]
+  achievements  Achievement[]
+  xp            UserXp?
+  speedrunRuns  SpeedrunRun[]
 }
 
 model Account {
@@ -95,4 +96,43 @@ model UserXp {
   updatedAt DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// N10 Speedrun Timer models
+
+model SpeedrunGame {
+  id         String             @id @default(cuid())
+  name       String
+  slug       String             @unique
+  categories SpeedrunCategory[]
+
+  @@index([name])
+}
+
+model SpeedrunCategory {
+  id         String        @id @default(cuid())
+  gameId     String
+  name       String
+  splitNames String
+  game       SpeedrunGame  @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  runs       SpeedrunRun[]
+
+  @@unique([gameId, name])
+  @@index([gameId])
+}
+
+model SpeedrunRun {
+  id         String           @id @default(cuid())
+  userId     String?
+  categoryId String
+  splitTimes String
+  totalTime  Int
+  goldSplits String
+  shareToken String?          @unique
+  createdAt  DateTime         @default(now())
+  user       User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
+  category   SpeedrunCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@index([categoryId, totalTime])
+  @@index([userId, categoryId])
 }
