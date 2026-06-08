@@ -38,7 +38,10 @@ const initialState: TimerState = {
 export const useTimerStore = create<TimerState & TimerActions>((set, get) => ({
   ...initialState,
 
-  setElapsed: (ms) => set({ elapsedMs: ms }),
+  setElapsed: (ms) => {
+    if (get().status === "finished") return;
+    set({ elapsedMs: ms });
+  },
   setStatus: (status) => set({ status }),
   setGame: (game) => set({ game }),
   setCategory: (category) => set({ category }),
@@ -50,13 +53,17 @@ export const useTimerStore = create<TimerState & TimerActions>((set, get) => ({
     if (currentSplitIndex >= splits.length) return;
 
     const previousSplitElapsed = splitStartTimes[currentSplitIndex] ?? 0;
-    const updated = computeSplit(splits, currentSplitIndex, elapsed, previousSplitElapsed, pbSegments ?? undefined);
+    // Fall back to each split's stored pbSegmentMs so hotkeys don't need to pass pbSegments explicitly
+    const resolved = pbSegments ?? splits.map((s) => s.pbSegmentMs);
+    const updated = computeSplit(splits, currentSplitIndex, elapsed, previousSplitElapsed, resolved);
     const nextIndex = currentSplitIndex + 1;
+    const isLast = nextIndex === splits.length;
 
     set({
       splits: updated,
       currentSplitIndex: nextIndex,
       splitStartTimes: [...splitStartTimes, elapsed],
+      ...(isLast && { status: "finished", elapsedMs: elapsed }),
     });
   },
 

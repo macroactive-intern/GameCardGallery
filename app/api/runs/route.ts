@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/lib/auth/config";
 import { prisma } from "@/lib/prisma";
-import { createRun } from "@/lib/runs/service";
+import { createRun, getRunsByGameCategory } from "@/lib/runs/service";
 
 const bodySchema = z.object({
   game: z.string().trim().min(1),
@@ -11,6 +11,19 @@ const bodySchema = z.object({
   splits: z.unknown(),
   goldSplits: z.array(z.boolean()).optional(),
 });
+
+export async function GET(req: Request) {
+  const session = await auth();
+  if (!session?.user?.id) return NextResponse.json([]);
+
+  const { searchParams } = new URL(req.url);
+  const game = searchParams.get("game") ?? "";
+  const category = searchParams.get("category") ?? "";
+  if (!game || !category) return NextResponse.json([]);
+
+  const runs = await getRunsByGameCategory(prisma, game, category);
+  return NextResponse.json(runs.filter((r) => r.userId === session!.user!.id));
+}
 
 export async function POST(req: Request) {
   const session = await auth();
