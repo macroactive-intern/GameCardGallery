@@ -72,6 +72,8 @@ model AchievementTemplate {
   requiresIds String @default("[]")
 
   achievements Achievement[]
+
+  @@index([game])
 }
 
 model Achievement {

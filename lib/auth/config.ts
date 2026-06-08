@@ -1,12 +1,16 @@
 import NextAuth, { type DefaultSession } from "next-auth";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import Credentials from "next-auth/providers/credentials";
+import { compare } from "bcryptjs";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 
 declare module "next-auth" {
   interface Session {
     user: { id: string } & DefaultSession["user"];
+  }
+  interface JWT {
+    id?: string;
   }
 }
 
@@ -34,7 +38,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         if (!user?.password) return null;
 
-        const { compare } = await import("bcryptjs");
         const valid = await compare(parsed.data.password, user.password);
         if (!valid) return null;
 

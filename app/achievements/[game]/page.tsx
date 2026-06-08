@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { requireAuth } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { getGameAchievements } from "@/lib/achievements/service";
+import { parseRequiresIds } from "@/lib/achievements/prerequisites";
 import { UnlockButton } from "@/components/achievements/UnlockButton";
 import { UnlockNotification } from "@/components/achievements/UnlockNotification";
 import {
@@ -51,31 +52,15 @@ export default async function GameAchievementsPage({ params }: Props) {
       {/* Achievement list */}
       <div className="space-y-4">
         {templates.map((t) => {
-          const isUnlocked = t.unlocked;
-          const canUnlock = t.canUnlock;
-          const blocked = t.blockedBy;
-
-          // Resolve prerequisite template objects from the full list
-          const requiresIds: string[] = (() => {
-            try {
-              return JSON.parse(t.requiresIds) as string[];
-            } catch {
-              return [];
-            }
-          })();
-
-          const prereqTemplates = requiresIds
+          const prereqIds = parseRequiresIds(t.requiresIds);
+          const prereqTemplates = prereqIds
             .map((id) => templates.find((x) => x.id === id))
-            .filter(Boolean);
+            .filter((x): x is NonNullable<typeof x> => Boolean(x));
 
           return (
             <Card
               key={t.id}
-              className={
-                isUnlocked
-                  ? "border-primary/50 bg-primary/5"
-                  : "opacity-80"
-              }
+              className={t.unlocked ? "border-primary/50 bg-primary/5" : "opacity-80"}
             >
               <CardHeader className="pb-2">
                 <div className="flex items-start justify-between gap-4">
@@ -86,15 +71,12 @@ export default async function GameAchievementsPage({ params }: Props) {
                     </CardDescription>
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-2">
-                    {isUnlocked ? (
+                    {t.unlocked ? (
                       <span className="rounded-full bg-primary px-3 py-0.5 text-xs font-semibold text-primary-foreground">
                         Unlocked
                       </span>
                     ) : (
-                      <UnlockButton
-                        templateId={t.id}
-                        disabled={!canUnlock}
-                      />
+                      <UnlockButton templateId={t.id} disabled={!t.canUnlock} />
                     )}
                     <span className="text-xs text-muted-foreground">
                       +{t.xpReward} XP
@@ -104,33 +86,25 @@ export default async function GameAchievementsPage({ params }: Props) {
               </CardHeader>
 
               <CardContent className="space-y-2 text-xs text-muted-foreground">
-                {/* Prerequisite links */}
                 {prereqTemplates.length > 0 && (
                   <p>
                     <span className="font-medium">Requires: </span>
                     {prereqTemplates.map((pre, i) => (
-                      <span key={pre!.id}>
+                      <span key={pre.id}>
                         {i > 0 && ", "}
-                        <span
-                          className={
-                            pre!.unlocked
-                              ? "text-primary"
-                              : "text-muted-foreground"
-                          }
-                        >
-                          {pre!.title}
-                          {pre!.unlocked ? " ✓" : " ✗"}
+                        <span className={pre.unlocked ? "text-primary" : "text-muted-foreground"}>
+                          {pre.title}
+                          {pre.unlocked ? " ✓" : " ✗"}
                         </span>
                       </span>
                     ))}
                   </p>
                 )}
 
-                {/* Blocking prerequisites for locked achievements */}
-                {!isUnlocked && blocked.length > 0 && (
+                {!t.unlocked && t.blockedBy.length > 0 && (
                   <p className="text-destructive">
                     <span className="font-medium">Blocked by: </span>
-                    {blocked.map((b, i) => (
+                    {t.blockedBy.map((b, i) => (
                       <span key={b.id}>
                         {i > 0 && ", "}
                         {b.title}

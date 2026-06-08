@@ -3,8 +3,7 @@ import { unstable_cache } from "next/cache";
 
 import { requireAuth } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
-import { getAchievementOverview } from "@/lib/achievements/service";
-import { calculateLevel } from "@/lib/achievements/xp";
+import { getAchievementOverview, getLeaderboard } from "@/lib/achievements/service";
 import { UnlockNotification } from "@/components/achievements/UnlockNotification";
 import {
   Card,
@@ -14,21 +13,7 @@ import {
 } from "@/components/ui/card";
 
 const getCachedLeaderboard = unstable_cache(
-  async () => {
-    console.log("[leaderboard] fetching from database");
-    const rows = await prisma.userXp.findMany({
-      take: 20,
-      orderBy: { totalXp: "desc" },
-      include: { user: { select: { name: true, image: true } } },
-    });
-    return rows.map((r) => ({
-      userId: r.userId,
-      name: r.user.name,
-      image: r.user.image,
-      totalXp: r.totalXp,
-      ...calculateLevel(r.totalXp),
-    }));
-  },
+  () => getLeaderboard(prisma),
   ["leaderboard"],
   { revalidate: 30 },
 );

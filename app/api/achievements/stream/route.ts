@@ -1,13 +1,10 @@
 import { requireAuth } from "@/lib/auth/session";
 import { achievementEmitter } from "@/lib/achievements/emitter";
 
-export async function GET() {
+export async function GET(request: Request) {
   const session = await requireAuth();
   const userId = session.user.id;
-
   const encoder = new TextEncoder();
-
-  let cleanup: () => void;
 
   const stream = new ReadableStream({
     start(controller) {
@@ -21,10 +18,11 @@ export async function GET() {
 
       const handler = (data: unknown) => send(data);
       achievementEmitter.on(`unlock:${userId}`, handler);
-      cleanup = () => achievementEmitter.off(`unlock:${userId}`, handler);
-    },
-    cancel() {
-      cleanup?.();
+
+      request.signal.addEventListener("abort", () => {
+        achievementEmitter.off(`unlock:${userId}`, handler);
+        controller.close();
+      });
     },
   });
 

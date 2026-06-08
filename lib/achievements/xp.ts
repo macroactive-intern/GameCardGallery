@@ -3,8 +3,12 @@ export function calculateLevel(totalXp: number): {
   xpIntoLevel: number;
   xpToNextLevel: number;
 } {
+  if (!Number.isFinite(totalXp)) {
+    return { level: 1, xpIntoLevel: 0, xpToNextLevel: 100 };
+  }
+
   let level = 1;
-  let remaining = Math.max(0, totalXp);
+  let remaining = Math.max(0, Math.floor(totalXp));
 
   while (true) {
     const costToNext = 100 + (level - 1) * 50;

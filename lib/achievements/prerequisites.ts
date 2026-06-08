@@ -1,6 +1,6 @@
 import type { AchievementTemplate } from "@prisma/client";
 
-function parseRequiresIds(requiresIds: string): string[] {
+export function parseRequiresIds(requiresIds: string): string[] {
   try {
     const parsed = JSON.parse(requiresIds);
     return Array.isArray(parsed) ? parsed : [];

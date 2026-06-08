@@ -53,6 +53,15 @@ describe("createGameSchema", () => {
     ).toThrow();
   });
 
+  it("rejects cover URLs from unconfigured image hosts", () => {
+    expect(() =>
+      createGameSchema.parse({
+        ...validGameInput,
+        coverUrl: "https://example.com/game-cover.jpg",
+      }),
+    ).toThrow();
+  });
+
   it("checks release year against the current year at parse time", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-06-01T12:00:00Z"));

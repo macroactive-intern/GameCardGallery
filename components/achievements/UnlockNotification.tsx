@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type UnlockPayload = {
   achievement: { title: string };
@@ -13,6 +13,7 @@ type ActiveEvent = UnlockPayload & { key: number };
 
 export function UnlockNotification() {
   const [event, setEvent] = useState<ActiveEvent | null>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     let counter = 0;
@@ -21,13 +22,18 @@ export function UnlockNotification() {
     es.onmessage = (e: MessageEvent<string>) => {
       const data = JSON.parse(e.data) as { type?: string } & Partial<UnlockPayload>;
       if (data.type === "connected" || !data.achievement) return;
+
+      if (timerRef.current) clearTimeout(timerRef.current);
       setEvent({ ...(data as UnlockPayload), key: ++counter });
-      setTimeout(() => setEvent(null), 5000);
+      timerRef.current = setTimeout(() => setEvent(null), 5000);
     };
 
     es.onerror = () => es.close();
 
-    return () => es.close();
+    return () => {
+      es.close();
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
   }, []);
 
   if (!event) return null;

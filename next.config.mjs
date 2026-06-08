@@ -1,12 +1,15 @@
+import { createRequire } from "node:module";
+
+const require = createRequire(import.meta.url);
+const { allowedImageHosts } = require("./config/image-hosts.json");
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
-    remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "picsum.photos",
-      },
-    ],
+    remotePatterns: allowedImageHosts.map((hostname) => ({
+      protocol: "https",
+      hostname,
+    })),
   },
 };
 
