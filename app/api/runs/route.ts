@@ -4,11 +4,19 @@ import { auth } from "@/lib/auth/config";
 import { prisma } from "@/lib/prisma";
 import { createRun, getRunsByGameCategory } from "@/lib/runs/service";
 
+const splitSchema = z.object({
+  name: z.string().trim().min(1, "split name required").max(100),
+  segmentMs: z.number().int().nonnegative().nullable(),
+});
+
 const bodySchema = z.object({
-  game: z.string().trim().min(1),
-  category: z.string().trim().min(1),
-  totalMs: z.number().int().positive(),
-  splits: z.unknown(),
+  game: z.string().trim().min(1, "game is required").max(100),
+  category: z.string().trim().min(1, "category is required").max(100),
+  totalMs: z.number().int().positive("totalMs must be a positive integer"),
+  splits: z
+    .array(splitSchema)
+    .min(1, "at least one split is required")
+    .max(200, "too many splits"),
   goldSplits: z.array(z.boolean()).optional(),
 });
 
@@ -34,7 +42,10 @@ export async function POST(req: Request) {
   const body = await req.json().catch(() => null);
   const parsed = bodySchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Invalid request body", issues: parsed.error.flatten().fieldErrors },
+      { status: 400 },
+    );
   }
 
   try {
