@@ -8,6 +8,7 @@ import { useSplits } from "@/hooks/useSplits";
 import { useHotkeys } from "@/hooks/useHotkeys";
 import { loadPbs, computeFinalStats, type FinalStats, type Split } from "@/lib/timer/splits";
 import { TimerDisplay } from "./TimerDisplay";
+import { GhostDelta } from "./GhostDelta";
 import { SplitTable } from "./SplitTable";
 import { HotkeyHints } from "./HotkeyHints";
 import { RunSummary } from "./RunSummary";
@@ -27,6 +28,7 @@ interface ActiveConfig {
   initialSplits: Split[];
   pbMs: number | null;
   pbSegments: Array<number | null>;
+  wrSegments: Array<number | null>;
 }
 
 // ── Setup form ────────────────────────────────────────────────────────────────
@@ -114,7 +116,20 @@ function SetupForm({
         isGold: false,
       }));
 
-      onStart({ game: gameName.trim(), category: categoryName.trim(), initialSplits, pbMs, pbSegments });
+      let wrSegments: Array<number | null> = [];
+      try {
+        const wrRes = await fetch(
+          `/api/runs/wr?game=${encodeURIComponent(gameName.trim())}&category=${encodeURIComponent(categoryName.trim())}`,
+        );
+        if (wrRes.ok) {
+          const wrData = (await wrRes.json()) as { totalMs: number; segments: Array<number | null> } | null;
+          wrSegments = wrData?.segments ?? [];
+        }
+      } catch {
+        // non-fatal — ghost delta simply won't show
+      }
+
+      onStart({ game: gameName.trim(), category: categoryName.trim(), initialSplits, pbMs, pbSegments, wrSegments });
     } finally {
       setLoading(false);
     }
@@ -263,6 +278,35 @@ function TimerView({
   useSplits(timerActions, config.pbSegments, config.pbMs);
   const { hotkeys, remap } = useHotkeys(timerActions);
 
+  // Push structural state changes (splits/status) to the live SSE store.
+  // Skips every-frame tick updates by comparing index + status only.
+  useEffect(() => {
+    if (!userId) return;
+    let prevIndex = -1;
+    let prevStatus = "";
+    return useTimerStore.subscribe((state) => {
+      if (state.currentSplitIndex === prevIndex && state.status === prevStatus) return;
+      prevIndex = state.currentSplitIndex;
+      prevStatus = state.status;
+      fetch("/api/runs/live", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          game: state.game,
+          category: state.category,
+          status: state.status,
+          elapsedMs: state.elapsedMs,
+          currentSplitIndex: state.currentSplitIndex,
+          splits: state.splits.map((s) => ({
+            name: s.name,
+            elapsed: s.elapsed,
+            segmentMs: s.segmentMs,
+          })),
+        }),
+      }).catch(() => {});
+    });
+  }, [userId]);
+
   function handleReset() {
     timerActions.reset();
     onReset();
@@ -284,8 +328,9 @@ function TimerView({
 
       {savedIsWR && <WorldRecordBanner isWR />}
 
-      <div className="flex items-center justify-center py-8">
+      <div className="flex flex-col items-center gap-2 py-8">
         <TimerDisplay />
+        <GhostDelta wrSegments={config.wrSegments} />
       </div>
 
       <SplitTable />
